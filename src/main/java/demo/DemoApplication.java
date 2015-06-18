@@ -21,7 +21,6 @@ public class DemoApplication {
         SpringApplication.run(DemoApplication.class, args);
     }
 
-
     @Bean
     HttpMessageConverter<Object> httpMessageConverter() {
         return new Jaxb2RootElementHttpMessageConverter() {
