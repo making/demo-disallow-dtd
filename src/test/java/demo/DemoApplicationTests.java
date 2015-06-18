@@ -1,6 +1,8 @@
 package demo;
 
 import org.junit.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
@@ -11,22 +13,23 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.UnmarshalException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamSource;
+import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@ContextConfiguration(classes = DemoApplication.class)
 public class DemoApplicationTests {
 
-    //    @Autowired
-    //    @Qualifier("httpMessageConverter")
     HttpMessageConverter<Object> converter = new Jaxb2RootElementHttpMessageConverter() {
         @Override
         protected Source processSource(Source source) {
@@ -43,6 +46,36 @@ public class DemoApplicationTests {
                 }
             } else {
                 return source;
+            }
+        }
+
+        @Override
+        protected Object readFromSource(Class<?> clazz, HttpHeaders headers, Source source) throws IOException {
+            try {
+                source = processSource(source);
+                Unmarshaller unmarshaller = createUnmarshaller(clazz);
+                if (clazz.isAnnotationPresent(XmlRootElement.class)) {
+                    return unmarshaller.unmarshal(source);
+                } else {
+                    try {
+                        JAXBElement<?> jaxbElement = unmarshaller.unmarshal(source, clazz);
+                        return jaxbElement.getValue();
+                    } catch (NullPointerException e) {
+                        if (source != null && clazz != null) {
+                            // To keep compatibility with JDK 6
+                            throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + e.getMessage(),
+                                    new UnmarshalException(
+                                            new SAXParseException("DOCTYPE is disallowed when the feature \"http://apache.org/xml/features/disallow-doctype-decl\" set to true.", null, null, -1, -1)));
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            } catch (UnmarshalException ex) {
+                throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + ex.getMessage(), ex);
+
+            } catch (JAXBException ex) {
+                throw new HttpMessageConversionException("Could not instantiate JAXBContext: " + ex.getMessage(), ex);
             }
         }
     };
