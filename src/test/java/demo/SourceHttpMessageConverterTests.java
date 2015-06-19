@@ -44,9 +44,9 @@ public class SourceHttpMessageConverterTests {
             streamReader.next();
             String s = streamReader.getLocalName();
             assertEquals("root", s);
-            s = streamReader.getElementText();
-
-            System.out.println(result);
+//            s = streamReader.getElementText();
+//
+//            System.out.println(result);
         }
         catch (HttpMessageNotReadableException e) {
             System.out.println(e.getCause().getClass());
