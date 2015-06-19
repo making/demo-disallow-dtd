@@ -49,46 +49,48 @@ public class DemoApplicationTests {
             }
         }
 
-        @Override
-        protected Object readFromSource(Class<?> clazz, HttpHeaders headers, Source source) throws IOException {
-            try {
-                source = processSource(source);
-                Unmarshaller unmarshaller = createUnmarshaller(clazz);
-                if (clazz.isAnnotationPresent(XmlRootElement.class)) {
-                    return unmarshaller.unmarshal(source);
-                } else {
-                    try {
-                        JAXBElement<?> jaxbElement = unmarshaller.unmarshal(source, clazz);
-                        return jaxbElement.getValue();
-                    } catch (NullPointerException e) {
-                        if (source != null && clazz != null) {
-                            // To keep compatibility with JDK 6
-                            throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + e.getMessage(),
-                                    new UnmarshalException(
-                                            new SAXParseException("DOCTYPE is disallowed when the feature \"http://apache.org/xml/features/disallow-doctype-decl\" set to true.", null, null, -1, -1)));
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-            } catch (UnmarshalException ex) {
-                throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + ex.getMessage(), ex);
-
-            } catch (JAXBException ex) {
-                throw new HttpMessageConversionException("Could not instantiate JAXBContext: " + ex.getMessage(), ex);
-            }
-        }
+//        @Override
+//        protected Object readFromSource(Class<?> clazz, HttpHeaders headers, Source source) throws IOException {
+//            try {
+//                source = processSource(source);
+//                Unmarshaller unmarshaller = createUnmarshaller(clazz);
+//                if (clazz.isAnnotationPresent(XmlRootElement.class)) {
+//                    return unmarshaller.unmarshal(source);
+//                } else {
+//                    try {
+//                        JAXBElement<?> jaxbElement = unmarshaller.unmarshal(source, clazz);
+//                        return jaxbElement.getValue();
+//                    } catch (NullPointerException e) {
+//                        if (source != null && clazz != null) {
+//                            // To keep compatibility with JDK 6
+//                            throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + e.getMessage(),
+//                                    new UnmarshalException(
+//                                            new SAXParseException("DOCTYPE is disallowed when the feature \"http://apache.org/xml/features/disallow-doctype-decl\" set to true.", null, null, -1, -1)));
+//                        } else {
+//                            throw e;
+//                        }
+//                    }
+//                }
+//            } catch (UnmarshalException ex) {
+//                throw new HttpMessageNotReadableException("Could not unmarshal to [" + clazz + "]: " + ex.getMessage(), ex);
+//
+//            } catch (JAXBException ex) {
+//                throw new HttpMessageConversionException("Could not instantiate JAXBContext: " + ex.getMessage(), ex);
+//            }
+//        }
     };
 
     @Test
     public void contextLoads() throws Exception {
-        String content = "<!DOCTYPE foo><rootElement><external>a</external></rootElement>";
+        String content =
+                "<!DOCTYPE foo[<!ENTITY companyname \"Contoso Inc.\">]>" +
+                "<rootElement><external>a</external></rootElement>";
         MockHttpInputMessage inputMessage = new MockHttpInputMessage(content.getBytes("UTF-8"));
         try {
             RootElement rootElement = (RootElement) converter.read(RootElement.class, inputMessage);
             System.out.println(rootElement);
-            fail();
-        } catch (HttpMessageNotReadableException e) {
+        }
+        catch (HttpMessageNotReadableException e) {
             System.out.println(e.getCause().getClass());
             assertThat(e.getCause(), is(instanceOf(UnmarshalException.class)));
             assertThat(e.getCause().getCause(), is(instanceOf(SAXParseException.class)));
