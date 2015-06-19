@@ -45,7 +45,7 @@ public class Jaxb2MarshallerTests {
             streamReader.next();
             String s = streamReader.getLocalName();
             assertEquals("root", s);
-            s = streamReader.getElementText();
+            //s = streamReader.getElementText();
 
             System.out.println(result);
         }
